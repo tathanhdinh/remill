@@ -110,20 +110,22 @@ static void AddFunctionToModule(llvm::Module *module,
     inst_bytes.insert(inst_bytes.end(), bytes, bytes + 4);
 
     remill::Instruction inst;
-    CHECK(arch->DecodeInstruction(addr, inst_bytes, inst))
-        << "Can't decode test instruction " << inst.Serialize()
-        << " in " << test.test_name;
+    assert(arch->DecodeInstruction(addr, inst_bytes, inst));
+    // CHECK(arch->DecodeInstruction(addr, inst_bytes, inst))
+    //     << "Can't decode test instruction " << inst.Serialize()
+    //     << " in " << test.test_name;
 
     seen_insts << sep << inst.function;
     sep = ", ";
 
-    LOG(INFO)
-        << "Lifting " << inst.Serialize();
+    // LOG(INFO)
+    //     << "Lifting " << inst.Serialize();
 
     auto block = GetOrCreateBlock(inst.pc);
-    CHECK(remill::kLiftedInstruction == lifter.LiftIntoBlock(inst, block))
-        << "Can't lift test instruction " << inst.Serialize()
-        << " in " << test.test_name;
+    assert(remill::kLiftedInstruction == lifter.LiftIntoBlock(inst, block));
+    // CHECK(remill::kLiftedInstruction == lifter.LiftIntoBlock(inst, block))
+    //     << "Can't lift test instruction " << inst.Serialize()
+    //     << " in " << test.test_name;
 
     saw_isel = saw_isel || inst.function == test.isel_name;
     addr += inst.NumBytes();
@@ -153,10 +155,11 @@ static void AddFunctionToModule(llvm::Module *module,
     }
   }
 
-  CHECK(saw_isel)
-      << "Test " << test.test_name << " does not have an instruction that "
-      << "uses the semantics function " << test.isel_name << ", saw "
-      << seen_insts.str();
+  assert(saw_isel);
+  // CHECK(saw_isel)
+  //     << "Test " << test.test_name << " does not have an instruction that "
+  //     << "uses the semantics function " << test.isel_name << ", saw "
+  //     << seen_insts.str();
 
   // Terminate any stragglers.
   for (auto pc_to_block : blocks) {
@@ -177,7 +180,7 @@ extern "C" int main(int argc, char *argv[]) {
   auto os = remill::GetOSName(REMILL_OS);
   auto arch = remill::Arch::Get(os, remill::kArchAArch64LittleEndian);
 
-  DLOG(INFO) << "Generating tests.";
+  // DLOG(INFO) << "Generating tests.";
 
   auto context = new llvm::LLVMContext;
   auto bc_file = remill::FindSemanticsBitcodeFile(FLAGS_arch);

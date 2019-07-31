@@ -14,7 +14,8 @@
  * limitations under the License.
  */
 
-#include <glog/logging.h>
+// #include <glog/logging.h>
+#include <cassert>
 
 #include <iomanip>
 #include <map>
@@ -305,8 +306,9 @@ static std::string InstructionFunctionName(const xed_decoded_inst_t *xedd) {
   // semantics function with the atomic begin/end intrinsics.
   auto iform = xed_decoded_inst_get_iform_enum(xedd);
   if (xed_operand_values_has_lock_prefix(xedd)) {
-    CHECK(kUnlockedIform.count(iform))
-        << xed_iform_enum_t2str(iform) << " has no unlocked iform mapping.";
+    // CHECK(kUnlockedIform.count(iform))
+    //     << xed_iform_enum_t2str(iform) << " has no unlocked iform mapping.";
+    assert(kUnlockedIform.count(iform) != 0);
     iform = kUnlockedIform[iform];
   }
 
@@ -348,20 +350,22 @@ static bool DecodeXED(xed_decoded_inst_t *xedd,
   xed_decoded_inst_set_input_chip(xedd, XED_CHIP_INVALID);
   auto err = xed_decode(xedd, bytes, static_cast<uint32_t>(num_bytes));
 
-  if (XED_ERROR_NONE != err) {
-    std::stringstream ss;
-    for (auto b : inst_bytes) {
-      ss << std::hex << std::setw(2) << std::setfill('0')
-         << static_cast<unsigned>(b);
-    }
-    LOG(ERROR)
-        << "Unable to decode instruction at " << std::hex << address
-        << " with bytes " << ss.str() << " and error: "
-        << xed_error_enum_t2str(err) << std::dec;
-    return false;
-  }
+  return (XED_ERROR_NONE == err);
 
-  return true;
+  // if (XED_ERROR_NONE != err) {
+  //   std::stringstream ss;
+  //   for (auto b : inst_bytes) {
+  //     ss << std::hex << std::setw(2) << std::setfill('0')
+  //        << static_cast<unsigned>(b);
+  //   }
+  //   LOG(ERROR)
+  //       << "Unable to decode instruction at " << std::hex << address
+  //       << " with bytes " << ss.str() << " and error: "
+  //       << xed_error_enum_t2str(err) << std::dec;
+  //   return false;
+  // }
+
+  // return true;
 }
 
 // Variable operand for a read register.
@@ -520,17 +524,19 @@ static void DecodeImmediate(Instruction &inst,
 
   if (XED_OPERAND_PTR == op_name) {
     auto ptr_size = xed_decoded_inst_get_branch_displacement_width_bits(xedd);
-    CHECK(ptr_size <= operand_size)
-        << "Pointer size is greater than effective operand size at "
-        << std::hex << inst.pc << ".";
+    assert(ptr_size <= operand_size);
+    // CHECK(ptr_size <= operand_size)
+    //     << "Pointer size is greater than effective operand size at "
+    //     << std::hex << inst.pc << ".";
     op.size = ptr_size;
 
     val = static_cast<uint64_t>(xed_decoded_inst_get_branch_displacement(xedd));
   } else {
     auto imm_size = xed_decoded_inst_get_immediate_width_bits(xedd);
-    CHECK(imm_size <= operand_size)
-        << "Immediate size is greater than effective operand size at "
-        << std::hex << inst.pc << ".";
+    assert(imm_size <= operand_size);
+    // CHECK(imm_size <= operand_size)
+    //     << "Immediate size is greater than effective operand size at "
+    //     << std::hex << inst.pc << ".";
     op.size = imm_size;
 
     if (XED_OPERAND_IMM0SIGNED == op_name ||
@@ -546,9 +552,10 @@ static void DecodeImmediate(Instruction &inst,
       val = static_cast<uint64_t>(xed_decoded_inst_get_second_immediate(xedd));
 
     } else {
-      CHECK(false)
-          << "Unexpected immediate type "
-          << xed_operand_enum_t2str(op_name) << ".";
+      // CHECK(false)
+      //     << "Unexpected immediate type "
+      //     << xed_operand_enum_t2str(op_name) << ".";
+      assert(false);
     }
   }
 
@@ -563,8 +570,9 @@ static void DecodeRegister(Instruction &inst,
                            const xed_operand_t *xedo,
                            xed_operand_enum_t op_name) {
   auto reg = xed_decoded_inst_get_reg(xedd, op_name);
-  CHECK(XED_REG_INVALID != reg)
-      << "Cannot get name of invalid register.";
+  assert(XED_REG_INVALID != reg);
+  // CHECK(XED_REG_INVALID != reg)
+  //     << "Cannot get name of invalid register.";
 
   Operand op = {};
   op.type = Operand::kTypeRegister;
@@ -709,8 +717,9 @@ static uint16_t DecodeFpuOpcode(Instruction &inst) {
     }
   }
 
-  CHECK(i >= 2)
-      << "Failed to find FPU opcode byte for instruction " << inst.Serialize();
+  // CHECK(i >= 2)
+  //     << "Failed to find FPU opcode byte for instruction " << inst.Serialize();
+  assert(i >= 2);
 
   uint16_t opcode = 0;
   opcode |= static_cast<uint16_t>(bytes[0] & 3) << 8;
@@ -784,9 +793,10 @@ static void DecodeOperand(Instruction &inst,
       break;
 
     default:
-      LOG(FATAL)
-          << "Unexpected operand type "
-          << xed_operand_enum_t2str(op_name) << ".";
+      // LOG(FATAL)
+      //     << "Unexpected operand type "
+      //     << xed_operand_enum_t2str(op_name) << ".";
+      assert(true);
       return;
   }
 }
@@ -834,7 +844,7 @@ X86Arch::X86Arch(OSName os_name_, ArchName arch_name_)
 
   static bool xed_is_initialized = false;
   if (!xed_is_initialized) {
-    DLOG(INFO) << "Initializing XED tables";
+    // DLOG(INFO) << "Initializing XED tables";
     xed_tables_init();
     xed_is_initialized = true;
   }
@@ -886,9 +896,10 @@ llvm::Triple X86Arch::Triple(void) const {
       triple.setArch(llvm::Triple::x86);
       break;
     default:
-      LOG(FATAL)
-          << "Cannot get triple for non-x86 architecture "
-          << GetArchName(arch_name);
+      assert(false);
+      // LOG(FATAL)
+      //     << "Cannot get triple for non-x86 architecture "
+      //     << GetArchName(arch_name);
   }
 
   return triple;
@@ -899,7 +910,8 @@ llvm::DataLayout X86Arch::DataLayout(void) const {
   std::string dl;
   switch (os_name) {
     case kOSInvalid:
-      LOG(FATAL) << "Cannot convert module for an unrecognized OS.";
+      // LOG(FATAL) << "Cannot convert module for an unrecognized OS.";
+      assert(false and "Cannot convert module for an unrecognized OS.");
       break;
 
     case kOSLinux:
@@ -916,9 +928,10 @@ llvm::DataLayout X86Arch::DataLayout(void) const {
           dl = "e-m:e-p:32:32-f64:32:64-f80:32-n8:16:32-S128";
           break;
         default:
-          LOG(FATAL)
-              << "Cannot get data layout non-x86 architecture "
-              << GetArchName(arch_name);
+          assert(false);
+          // LOG(FATAL)
+          //     << "Cannot get data layout non-x86 architecture "
+          //     << GetArchName(arch_name);
           break;
       }
       break;
@@ -936,9 +949,10 @@ llvm::DataLayout X86Arch::DataLayout(void) const {
           dl = "e-m:o-p:32:32-f64:32:64-f80:128-n8:16:32-S128";
           break;
         default:
-          LOG(FATAL)
-              << "Cannot get data layout for non-x86 architecture "
-              << GetArchName(arch_name);
+          assert(false);
+          // LOG(FATAL)
+          //     << "Cannot get data layout for non-x86 architecture "
+          //     << GetArchName(arch_name);
       }
       break;
 
@@ -955,9 +969,10 @@ llvm::DataLayout X86Arch::DataLayout(void) const {
           dl = "e-m:x-p:32:32-i64:64-f80:32-n8:16:32-a:0:32-S32";
           break;
         default:
-          LOG(FATAL)
-              << "Cannot get data layout for non-x86 architecture "
-              << GetArchName(arch_name);
+          assert(false);
+          // LOG(FATAL)
+          //     << "Cannot get data layout for non-x86 architecture "
+          //     << GetArchName(arch_name);
       }
       break;
   }
@@ -980,7 +995,7 @@ bool X86Arch::DecodeInstruction(
   auto mode = 32 == address_size ? &kXEDState32 : &kXEDState64;
 
   if (!DecodeXED(xedd, mode, inst_bytes, address)) {
-    LOG(ERROR) << "DecodeXED() could not decode the following opcodes: " << inst.Serialize();
+    // LOG(ERROR) << "DecodeXED() could not decode the following opcodes: " << inst.Serialize();
     return false;
   }
 
@@ -1051,9 +1066,9 @@ bool X86Arch::DecodeInstruction(
 
     if (xed_decoded_inst_is_xacquire(xedd) ||
         xed_decoded_inst_is_xrelease(xedd)) {
-      LOG(ERROR)
-          << "Ignoring XACQUIRE/XRELEASE prefix at " << std::hex
-          << inst.pc << std::dec;
+      // LOG(ERROR)
+      //     << "Ignoring XACQUIRE/XRELEASE prefix at " << std::hex
+      //     << inst.pc << std::dec;
     }
   }
 
@@ -1062,9 +1077,9 @@ bool X86Arch::DecodeInstruction(
   switch (xed_decoded_inst_get_isa_set(xedd)) {
     case XED_ISA_SET_INVALID:
     case XED_ISA_SET_LAST:
-      LOG(ERROR)
-          << "Instruction decode of " << xed_iform_enum_t2str(iform)
-          << " failed because XED_ISA_SET_LAST.";
+      // LOG(ERROR)
+      //     << "Instruction decode of " << xed_iform_enum_t2str(iform)
+      //     << " failed because XED_ISA_SET_LAST.";
       return false;
 
     case XED_ISA_SET_AVX:
@@ -1074,11 +1089,11 @@ bool X86Arch::DecodeInstruction(
     case XED_ISA_SET_AVX_GFNI: {
       auto supp = kArchAMD64 != inst.arch_name &&
                   kArchX86 != inst.arch_name;
-      LOG_IF(ERROR, !supp)
-          << "Instruction decode of " << xed_iform_enum_t2str(iform)
-          << " failed because the current arch is specified "
-          << "as " << GetArchName(inst.arch_name) << " but what is needed is "
-          << "the _avx or _avx512 variant.";
+      // LOG_IF(ERROR, !supp)
+      //     << "Instruction decode of " << xed_iform_enum_t2str(iform)
+      //     << " failed because the current arch is specified "
+      //     << "as " << GetArchName(inst.arch_name) << " but what is needed is "
+      //     << "the _avx or _avx512 variant.";
       return supp;
     }
 
@@ -1137,11 +1152,11 @@ bool X86Arch::DecodeInstruction(
     case XED_ISA_SET_AVX512_VPOPCNTDQ_512: {
       auto supp = kArchAMD64_AVX512 == inst.arch_name ||
                   kArchX86_AVX512 == inst.arch_name;
-      LOG_IF(ERROR, !supp)
-          << "Instruction decode of " << xed_iform_enum_t2str(iform)
-          << " failed because the current arch is specified "
-          << "as " << GetArchName(inst.arch_name) << " but what is needed is "
-          << "the _avx512 variant.";
+      // LOG_IF(ERROR, !supp)
+      //     << "Instruction decode of " << xed_iform_enum_t2str(iform)
+      //     << " failed because the current arch is specified "
+      //     << "as " << GetArchName(inst.arch_name) << " but what is needed is "
+      //     << "the _avx512 variant.";
       return supp;
     }
     default:

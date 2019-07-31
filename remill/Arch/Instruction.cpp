@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-#include <glog/logging.h>
+// #include <glog/logging.h>
 
 #include <iomanip>
 #include <sstream>
@@ -171,9 +171,10 @@ std::string Operand::Serialize(void) const {
         case 256: ss << "DOWORD"; break;
         case 512: ss << "QOWORD"; break;
         default:
-          CHECK(!(size & 7))
-              << "Memory operand size must be divisible by 8; got "
-              << size << " bits.";
+          // CHECK(!(size & 7))
+          //     << "Memory operand size must be divisible by 8; got "
+          //     << size << " bits.";
+          assert(size & 7 != 0);
           ss << std::dec << (size / 8) << "_BYTES"; break;
       }
 
@@ -208,7 +209,8 @@ std::string Operand::Serialize(void) const {
       }
 
       if (addr.scale) {
-        CHECK(!addr.index_reg.name.empty());
+        // CHECK(!addr.index_reg.name.empty());
+        assert(not addr.index_reg.name.empty());
         ss << " (MUL";
       }
 

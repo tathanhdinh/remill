@@ -493,7 +493,7 @@ static void ImportX87X86State(X86State *state) {
 
     // Copy over the MMX data. A good guess for MMX data is that the
     // value looks like it's infinity.
-    DLOG(INFO) << "Importing MMX state.";
+    // DLOG(INFO) << "Importing MMX state.";
     for (size_t i = 0; i < 8; ++i) {
       if (static_cast<uint16_t>(0xFFFFU) == fpu.fxsave.st[i].infinity) {
         state->mmx.elems[i].val.qwords.elems[0] = fpu.fxsave.st[i].mmx;
@@ -502,7 +502,7 @@ static void ImportX87X86State(X86State *state) {
 
   // Looks like X87 state.
   } else {
-    DLOG(INFO) << "Importing FPU state.";
+    // DLOG(INFO) << "Importing FPU state.";
     for (size_t i = 0; i < 8; ++i) {
       auto st = *reinterpret_cast<long double *>(&(fpu.fxsave.st[i].st));
       state->st.elems[i].val = static_cast<float64_t>(st);
@@ -576,9 +576,9 @@ static void RunWithFlags(const test::TestInfo *info,
     return;
   }
 
-  DLOG(INFO) << "Testing instruction: " << info->test_name << ": " << desc;
+  // DLOG(INFO) << "Testing instruction: " << info->test_name << ": " << desc;
   if (sigsetjmp(gUnsupportedInstrBuf, true)) {
-    DLOG(INFO) << "Unsupported instruction " << info->test_name;
+    // DLOG(INFO) << "Unsupported instruction " << info->test_name;
     return;
   }
 
@@ -848,23 +848,23 @@ static void RunWithFlags(const test::TestInfo *info,
     auto native_state_bytes = reinterpret_cast<uint8_t *>(native_state);
 
     for (size_t i = 0; i < sizeof(State); ++i) {
-      LOG_IF(ERROR, lifted_state_bytes[i] != native_state_bytes[i])
-          << "Bytes at offset " << i << " are different";
+      // LOG_IF(ERROR, lifted_state_bytes[i] != native_state_bytes[i])
+      //     << "Bytes at offset " << i << " are different";
     }
   }
 
   if (gLiftedStack != gNativeStack) {
-    LOG(ERROR)
-        << "Stacks did not match for " << desc;
+    // LOG(ERROR)
+    //     << "Stacks did not match for " << desc;
 
     for (size_t i = 0; i < sizeof(gLiftedStack.bytes); ++i) {
       if (gLiftedStack.bytes[i] != gNativeStack.bytes[i]) {
-        LOG(ERROR)
-            << "Lifted stack at 0x" << std::hex
-            << reinterpret_cast<uintptr_t>(&(gLiftedStack.bytes[i]))
-            << " does not match native stack at 0x" << std::hex
-            << reinterpret_cast<uintptr_t>(&(gNativeStack.bytes[i]))
-            << std::endl;
+        // LOG(ERROR)
+        //     << "Lifted stack at 0x" << std::hex
+        //     << reinterpret_cast<uintptr_t>(&(gLiftedStack.bytes[i]))
+        //     << " does not match native stack at 0x" << std::hex
+        //     << reinterpret_cast<uintptr_t>(&(gNativeStack.bytes[i]))
+        //     << std::endl;
       }
     }
 
@@ -1058,8 +1058,9 @@ int main(int argc, char **argv) {
       sym_func = dlsym(this_exe, (std::string("_") + ss.str()).c_str());
     }
 
-    CHECK(nullptr != sym_func)
-        << "Could not find code for test case " << test.test_name;
+    assert(nullptr != sym_func);
+    // CHECK(nullptr != sym_func)
+    //     << "Could not find code for test case " << test.test_name;
 
     auto lifted_func = reinterpret_cast<LiftedFunc *>(sym_func);
     gTranslatedFuncs[test.test_begin] = lifted_func;

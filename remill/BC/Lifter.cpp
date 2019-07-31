@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-#include <glog/logging.h>
+// #include <glog/logging.h>
 
 #include <functional>
 #include <ios>
@@ -73,10 +73,11 @@ llvm::Function *GetInstructionFunction(llvm::Module *module,
   }
 
   if (!isel->isConstant() || !isel->hasInitializer()) {
-    LOG(FATAL)
-        << "Expected a `constexpr` variable as the function pointer for "
-        << "instruction semantic function " << function
-        << ": " << LLVMThingToString(isel);
+    assert(false);
+    // LOG(FATAL)
+    //     << "Expected a `constexpr` variable as the function pointer for "
+    //     << "instruction semantic function " << function
+    //     << ": " << LLVMThingToString(isel);
   }
 
   auto sem = isel->getInitializer()->stripPointerCasts();
@@ -107,26 +108,28 @@ LiftStatus InstructionLifter::LiftIntoBlock(
   if (arch_inst.IsValid()) {
     isel_func = GetInstructionFunction(module, arch_inst.function);
   } else {
-    LOG(ERROR)
-        << "Cannot decode instruction bytes at "
-        << std::hex << arch_inst.pc << std::dec;
+    // LOG(ERROR)
+    //     << "Cannot decode instruction bytes at "
+    //     << std::hex << arch_inst.pc << std::dec;
 
     isel_func = GetInstructionFunction(module, "INVALID_INSTRUCTION");
-    CHECK(isel_func != nullptr)
-        << "INVALID_INSTRUCTION doesn't exist.";
+    assert(isel_func != nullptr);
+    // CHECK(isel_func != nullptr)
+    //     << "INVALID_INSTRUCTION doesn't exist.";
 
     arch_inst.operands.clear();
     status = kLiftedInvalidInstruction;
   }
 
   if (!isel_func) {
-    LOG(ERROR)
-        << "Missing semantics for instruction " << arch_inst.Serialize();
+    // LOG(ERROR)
+    //     << "Missing semantics for instruction " << arch_inst.Serialize();
 
     isel_func = GetInstructionFunction(module, "UNSUPPORTED_INSTRUCTION");
-    CHECK(isel_func != nullptr)
-        << "UNSUPPORTED_INSTRUCTION doesn't exist; not using it in place of "
-        << arch_inst.function;
+    assert(isel_func != nullptr);
+    // CHECK(isel_func != nullptr)
+    //     << "UNSUPPORTED_INSTRUCTION doesn't exist; not using it in place of "
+    //     << arch_inst.function;
 
     arch_inst.operands.clear();
     status = kLiftedUnsupportedInstruction;
@@ -157,22 +160,24 @@ LiftStatus InstructionLifter::LiftIntoBlock(
   auto arg_num = 2U;
 
   for (auto &op : arch_inst.operands) {
-    CHECK(arg_num < isel_func_type->getNumParams())
-        << "Function " << arch_inst.function << ", implemented by "
-        << isel_func->getName().str() << ", should have at least "
-        << arg_num << " arguments for instruction "
-        << arch_inst.Serialize();
+    assert(arg_num < isel_func_type->getNumParams());
+    // CHECK(arg_num < isel_func_type->getNumParams())
+    //     << "Function " << arch_inst.function << ", implemented by "
+    //     << isel_func->getName().str() << ", should have at least "
+    //     << arg_num << " arguments for instruction "
+    //     << arch_inst.Serialize();
 
     auto arg = NthArgument(isel_func, arg_num);
     auto arg_type = arg->getType();
     auto operand = LiftOperand(arch_inst, block, arg, op);
     arg_num += 1;
     auto op_type = operand->getType();
-    CHECK(op_type == arg_type)
-        << "Lifted operand " << op.Serialize() << " to "
-        << arch_inst.function << " does not have the correct type. Expected "
-        << LLVMThingToString(arg_type) << " but got "
-        << LLVMThingToString(op_type) << ".";
+    assert(op_type == arg_type);
+    // CHECK(op_type == arg_type)
+    //     << "Lifted operand " << op.Serialize() << " to "
+    //     << arch_inst.function << " does not have the correct type. Expected "
+    //     << LLVMThingToString(arg_type) << " but got "
+    //     << LLVMThingToString(op_type) << ".";
 
     args.push_back(operand);
   }
@@ -228,14 +233,16 @@ static llvm::Value *LoadWordRegValOrZero(llvm::BasicBlock *block,
   auto val_type = llvm::dyn_cast_or_null<llvm::IntegerType>(val->getType());
   auto word_type = zero->getType();
 
-  CHECK(val_type)
-      << "Register " << reg_name << " expected to be an integer.";
+  assert(val_type != 0);
+  // CHECK(val_type)
+  //     << "Register " << reg_name << " expected to be an integer.";
 
   auto val_size = val_type->getBitWidth();
   auto word_size = word_type->getBitWidth();
-  CHECK(val_size <= word_size)
-      << "Register " << reg_name << " expected to be no larger than the "
-      << "machine word size (" << word_type->getBitWidth() << " bits).";
+  assert(val_size <= word_size);
+  // CHECK(val_size <= word_size)
+  //     << "Register " << reg_name << " expected to be no larger than the "
+  //     << "machine word size (" << word_type->getBitWidth() << " bits).";
 
   if (val_size < word_size) {
     val = new llvm::ZExtInst(val, word_type, "", block);
@@ -256,9 +263,10 @@ llvm::Value *InstructionLifter::LiftShiftRegisterOperand(
   auto &arch_reg = op.shift_reg.reg;
 
   auto arg_type = arg->getType();
-  CHECK(arg_type->isIntegerTy())
-    << "Expected " << arch_reg.name << " to be an integral type "
-    << "for instruction at " << std::hex << inst.pc;
+  assert(arg_type->isIntegerTy());
+  // CHECK(arg_type->isIntegerTy())
+  //   << "Expected " << arch_reg.name << " to be an integral type "
+  //   << "for instruction at " << std::hex << inst.pc;
 
   const llvm::DataLayout data_layout(module);
   auto reg = LoadRegValue(block, arch_reg.name);
@@ -286,11 +294,12 @@ llvm::Value *InstructionLifter::LiftShiftRegisterOperand(
       reg = ir.CreateTrunc(reg, extract_type);
 
     } else {
-      CHECK(reg_size == op.shift_reg.extract_size)
-          << "Invalid extraction size. Can't extract "
-          << op.shift_reg.extract_size << " bits from a " << reg_size
-          << "-bit value in operand " << op.Serialize() << " of instruction at "
-          << std::hex << inst.pc;
+      assert(reg_size == op.shift_reg.extract_size);
+      // CHECK(reg_size == op.shift_reg.extract_size)
+      //     << "Invalid extraction size. Can't extract "
+      //     << op.shift_reg.extract_size << " bits from a " << reg_size
+      //     << "-bit value in operand " << op.Serialize() << " of instruction at "
+      //     << std::hex << inst.pc;
     }
 
     if (op.size > op.shift_reg.extract_size) {
@@ -304,15 +313,17 @@ llvm::Value *InstructionLifter::LiftShiftRegisterOperand(
           curr_size = op.size;
           break;
         default:
-          LOG(FATAL)
-              << "Invalid extend operation type for instruction at "
-              << std::hex << inst.pc;
+          assert(false);
+          // LOG(FATAL)
+          //     << "Invalid extend operation type for instruction at "
+          //     << std::hex << inst.pc;
           break;
       }
     }
   }
 
-  CHECK(curr_size <= op.size);
+  assert(curr_size <= op.size);
+  // CHECK(curr_size <= op.size);
 
   if (curr_size < op.size) {
     reg = ir.CreateZExt(reg, op_type);
@@ -321,10 +332,11 @@ llvm::Value *InstructionLifter::LiftShiftRegisterOperand(
 
   if (Operand::ShiftRegister::kShiftInvalid != op.shift_reg.shift_op) {
 
-    CHECK(shift_size < op.size)
-        << "Shift of size " << shift_size
-        << " is wider than the base register size in shift register in "
-        << inst.Serialize();
+    assert(shift_size < op.size);
+    // CHECK(shift_size < op.size)
+    //     << "Shift of size " << shift_size
+    //     << " is wider than the base register size in shift register in "
+    //     << inst.Serialize();
 
     switch (op.shift_reg.shift_op) {
       // Left shift.
@@ -378,9 +390,10 @@ llvm::Value *InstructionLifter::LiftShiftRegisterOperand(
   if (word_size > op.size) {
     reg = ir.CreateZExt(reg, word_type);
   } else {
-    CHECK(word_size == op.size)
-        << "Final size of operand " << op.Serialize() << " is " << op.size
-        << " bits, but address size is " << word_size;
+    assert(word_size == op.size);
+    // CHECK(word_size == op.size)
+    //     << "Final size of operand " << op.Serialize() << " is " << op.size
+    //     << " bits, but address size is " << word_size;
   }
 
   return reg;
@@ -416,11 +429,13 @@ static llvm::Value *ConvertToIntendedType(Instruction &inst, Operand &op,
     }
   }
 
-  LOG(FATAL)
-      << "Unable to convert value " << LLVMThingToString(val)
-      << " to intended argument type " << LLVMThingToString(intended_type)
-      << " for operand " << op.Serialize() << " of instruction "
-      << inst.Serialize();
+  assert(false);
+
+  // LOG(FATAL)
+  //     << "Unable to convert value " << LLVMThingToString(val)
+  //     << " to intended argument type " << LLVMThingToString(intended_type)
+  //     << " for operand " << op.Serialize() << " of instruction "
+  //     << inst.Serialize();
 
   return nullptr;
 }
@@ -451,9 +466,10 @@ llvm::Value *InstructionLifter::LiftRegisterOperand(
     return ConvertToIntendedType(inst, op, block, val, real_arg_type);
 
   } else {
-    CHECK(arg_type->isIntegerTy() || arg_type->isFloatingPointTy())
-        << "Expected " << arch_reg.name << " to be an integral or float type "
-        << "for instruction at " << std::hex << inst.pc;
+    assert(arg_type->isIntegerTy() || arg_type->isFloatingPointTy());
+    // CHECK(arg_type->isIntegerTy() || arg_type->isFloatingPointTy())
+    //     << "Expected " << arch_reg.name << " to be an integral or float type "
+    //     << "for instruction at " << std::hex << inst.pc;
 
     auto val = LoadRegValue(block, arch_reg.name);
 
@@ -465,42 +481,48 @@ llvm::Value *InstructionLifter::LiftRegisterOperand(
 
     if (val_size < arg_size) {
       if (arg_type->isIntegerTy()) {
-        CHECK(val_type->isIntegerTy())
-            << "Expected " << arch_reg.name << " to be an integral type "
-            << "for instruction at " << std::hex << inst.pc;
+        assert(val_type->isIntegerTy());
+        // CHECK(val_type->isIntegerTy())
+        //     << "Expected " << arch_reg.name << " to be an integral type "
+        //     << "for instruction at " << std::hex << inst.pc;
 
-        CHECK(word_size == arg_size)
-            << "Expected integer argument to be machine word size ("
-            << word_size << " bits) but is is " << arg_size << " instead "
-            << "in instruction at " << std::hex << inst.pc;
+        assert(word_size == arg_size);
+        // CHECK(word_size == arg_size)
+        //     << "Expected integer argument to be machine word size ("
+        //     << word_size << " bits) but is is " << arg_size << " instead "
+        //     << "in instruction at " << std::hex << inst.pc;
 
         val = new llvm::ZExtInst(val, word_type, "", block);
 
       } else if (arg_type->isFloatingPointTy()) {
-        CHECK(val_type->isFloatingPointTy())
-            << "Expected " << arch_reg.name << " to be a floating point type "
-            << "for instruction at " << std::hex << inst.pc;
+        assert(val_type->isFloatingPointTy());
+        // CHECK(val_type->isFloatingPointTy())
+        //     << "Expected " << arch_reg.name << " to be a floating point type "
+        //     << "for instruction at " << std::hex << inst.pc;
 
         val = new llvm::FPExtInst(val, arg_type, "", block);
       }
 
     } else if (val_size > arg_size) {
       if (arg_type->isIntegerTy()) {
-        CHECK(val_type->isIntegerTy())
-            << "Expected " << arch_reg.name << " to be an integral type "
-            << "for instruction at " << std::hex << inst.pc;
+        assert(val_type->isIntegerTy());
+        // CHECK(val_type->isIntegerTy())
+        //     << "Expected " << arch_reg.name << " to be an integral type "
+        //     << "for instruction at " << std::hex << inst.pc;
 
-        CHECK(word_size == arg_size)
-            << "Expected integer argument to be machine word size ("
-            << word_size << " bits) but is is " << arg_size << " instead "
-            << "in instruction at " << std::hex << inst.pc;
+        assert(word_size == arg_size);
+        // CHECK(word_size == arg_size)
+        //     << "Expected integer argument to be machine word size ("
+        //     << word_size << " bits) but is is " << arg_size << " instead "
+        //     << "in instruction at " << std::hex << inst.pc;
 
         val = new llvm::TruncInst(val, arg_type, "", block);
 
       } else if (arg_type->isFloatingPointTy()) {
-        CHECK(val_type->isFloatingPointTy())
-            << "Expected " << arch_reg.name << " to be a floating point type "
-            << "for instruction at " << std::hex << inst.pc;
+        // CHECK(val_type->isFloatingPointTy())
+        //     << "Expected " << arch_reg.name << " to be a floating point type "
+        //     << "for instruction at " << std::hex << inst.pc;
+        assert(val_type->isFloatingPointTy());
 
         val = new llvm::FPTruncInst(val, arg_type, "", block);
       }
@@ -517,26 +539,29 @@ llvm::Value *InstructionLifter::LiftImmediateOperand(Instruction &inst,
                                                      Operand &arch_op) {
   auto arg_type = arg->getType();
   if (arch_op.size > word_type->getBitWidth()) {
-    CHECK(arg_type->isIntegerTy(static_cast<uint32_t>(arch_op.size)))
-        << "Argument to semantics function for instruction at " << std::hex
-        << inst.pc << " is not an integer. This may not be surprising because "
-        << "the immediate operand is " << arch_op.size << " bits, but the "
-        << "machine word size is " << word_type->getBitWidth() << " bits.";
+    assert(arg_type->isIntegerTy(static_cast<uint32_t>(arch_op.size)));
+    // CHECK(arg_type->isIntegerTy(static_cast<uint32_t>(arch_op.size)))
+    //     << "Argument to semantics function for instruction at " << std::hex
+    //     << inst.pc << " is not an integer. This may not be surprising because "
+    //     << "the immediate operand is " << arch_op.size << " bits, but the "
+    //     << "machine word size is " << word_type->getBitWidth() << " bits.";
 
-    CHECK(arch_op.size <= 64)
-        << "Decode error! Immediate operands can be at most 64 bits! "
-        << "Operand structure encodes a truncated " << arch_op.size << " bit "
-        << "value for instruction at " << std::hex << inst.pc;
+    assert(arch_op.size <= 64);
+    // CHECK(arch_op.size <= 64)
+    //     << "Decode error! Immediate operands can be at most 64 bits! "
+    //     << "Operand structure encodes a truncated " << arch_op.size << " bit "
+    //     << "value for instruction at " << std::hex << inst.pc;
 
     return llvm::ConstantInt::get(
         arg_type, arch_op.imm.val, arch_op.imm.is_signed);
 
   } else {
-    CHECK(arg_type->isIntegerTy(word_type->getBitWidth()))
-        << "Bad semantics function implementation for instruction at "
-        << std::hex << inst.pc << ". Integer constants that are "
-        << "smaller than the machine word size should be represented as "
-        << "machine word sized arguments to semantics functions.";
+    assert(arg_type->isIntegerTy(word_type->getBitWidth()));
+    // CHECK(arg_type->isIntegerTy(word_type->getBitWidth()))
+    //     << "Bad semantics function implementation for instruction at "
+    //     << std::hex << inst.pc << ". Integer constants that are "
+    //     << "smaller than the machine word size should be represented as "
+    //     << "machine word sized arguments to semantics functions.";
 
     return llvm::ConstantInt::get(
         word_type, arch_op.imm.val, arch_op.imm.is_signed);
@@ -550,15 +575,17 @@ llvm::Value *InstructionLifter::LiftAddressOperand(
   auto zero = llvm::ConstantInt::get(word_type, 0, false);
   auto word_size = word_type->getBitWidth();
 
-  CHECK(word_size >= arch_addr.base_reg.size)
-      << "Memory base register " << arch_addr.base_reg.name
-      << "for instruction at " << std::hex << inst.pc
-      << " is wider than the machine word size.";
+  assert(word_size >= arch_addr.base_reg.size);
+  // CHECK(word_size >= arch_addr.base_reg.size)
+  //     << "Memory base register " << arch_addr.base_reg.name
+  //     << "for instruction at " << std::hex << inst.pc
+  //     << " is wider than the machine word size.";
 
-  CHECK(word_size >= arch_addr.index_reg.size)
-      << "Memory index register " << arch_addr.base_reg.name
-      << "for instruction at " << std::hex << inst.pc
-      << " is wider than the machine word size.";
+  assert(word_size >= arch_addr.index_reg.size);
+  // CHECK(word_size >= arch_addr.index_reg.size)
+  //     << "Memory index register " << arch_addr.base_reg.name
+  //     << "for instruction at " << std::hex << inst.pc
+  //     << " is wider than the machine word size.";
 
   auto addr = LoadWordRegValOrZero(block, arch_addr.base_reg.name, zero);
   auto index = LoadWordRegValOrZero(block, arch_addr.index_reg.name, zero);
@@ -610,22 +637,25 @@ llvm::Value *InstructionLifter::LiftOperand(Instruction &inst,
   auto arg_type = arg->getType();
   switch (arch_op.type) {
     case Operand::kTypeInvalid:
-      LOG(FATAL)
-          << "Decode error! Cannot lift invalid operand.";
+      assert(false);
+      // LOG(FATAL)
+      //     << "Decode error! Cannot lift invalid operand.";
       return nullptr;
 
     case Operand::kTypeShiftRegister:
-      CHECK(Operand::kActionRead == arch_op.action)
-          << "Can't write to a shift register operand "
-          << "for instruction at " << std::hex << inst.pc;
+      assert(Operand::kActionRead == arch_op.action);
+      // CHECK(Operand::kActionRead == arch_op.action)
+      //     << "Can't write to a shift register operand "
+      //     << "for instruction at " << std::hex << inst.pc;
 
       return LiftShiftRegisterOperand(inst, block, arg, arch_op);
 
     case Operand::kTypeRegister:
       if (arch_op.size != arch_op.reg.size) {
-        LOG(FATAL)
-            << "Operand size and register size must match for register "
-            << arch_op.reg.name << " in instruction " << inst.Serialize();
+        assert(false);
+        // LOG(FATAL)
+        //     << "Operand size and register size must match for register "
+        //     << arch_op.reg.name << " in instruction " << inst.Serialize();
       }
       return LiftRegisterOperand(inst, block, arg, arch_op);
 
@@ -634,20 +664,22 @@ llvm::Value *InstructionLifter::LiftOperand(Instruction &inst,
 
     case Operand::kTypeAddress:
       if (arg_type != word_type) {
-        LOG(FATAL)
-            << "Expected that a memory operand should be represented by "
-            << "machine word type. Argument type is "
-            << LLVMThingToString(arg_type) << " and word type is "
-            << LLVMThingToString(word_type) << " in instruction at "
-            << std::hex << inst.pc;
+        assert(false);
+        // LOG(FATAL)
+        //     << "Expected that a memory operand should be represented by "
+        //     << "machine word type. Argument type is "
+        //     << LLVMThingToString(arg_type) << " and word type is "
+        //     << LLVMThingToString(word_type) << " in instruction at "
+        //     << std::hex << inst.pc;
       }
 
       return LiftAddressOperand(inst, block, arg, arch_op);
   }
 
-  LOG(FATAL)
-      << "Got a unknown operand type of " << static_cast<int>(arch_op.type)
-      << " in instruction at " << std::hex << inst.pc;
+  assert(false);
+  // LOG(FATAL)
+  //     << "Got a unknown operand type of " << static_cast<int>(arch_op.type)
+  //     << " in instruction at " << std::hex << inst.pc;
 
   return nullptr;
 }
@@ -710,7 +742,8 @@ llvm::Function *TraceLifter::GetLiftedTraceDefinition(uint64_t addr) {
     return func;
   }
 
-  CHECK(&(func->getContext()) == &context);
+  assert(&(func->getContext()) == &context);
+  // CHECK(&(func->getContext()) == &context);
 
   auto extern_func = DeclareLiftedFunction(module, func->getName().str());
   if (extern_func->isDeclaration()) {
@@ -800,8 +833,8 @@ bool TraceLifter::Lift(uint64_t addr_,
                        std::function<void(uint64_t,llvm::Function *)> callback) {
   auto addr = addr_ & addr_mask;
   if (addr < addr_) {  // Address is out of range.
-    LOG(ERROR)
-        << "Trace address " << std::hex << addr_ << " is too big" << std::dec;
+    // LOG(ERROR)
+    //     << "Trace address " << std::hex << addr_ << " is too big" << std::dec;
     return false;
   }
 
@@ -817,8 +850,8 @@ bool TraceLifter::Lift(uint64_t addr_,
       continue;
     }
 
-    DLOG(INFO)
-        << "Lifting trace at address " << std::hex << trace_addr << std::dec;
+    // DLOG(INFO)
+    //     << "Lifting trace at address " << std::hex << trace_addr << std::dec;
 
     state.func = GetLiftedTraceDeclaration(trace_addr);
     state.blocks.clear();
@@ -828,7 +861,8 @@ bool TraceLifter::Lift(uint64_t addr_,
       state.func = DeclareLiftedFunction(module, trace_name);
     }
 
-    CHECK(state.func->isDeclaration());
+    // CHECK(state.func->isDeclaration());
+    assert(state.func->isDeclaration());
 
     // Fill in the function, and make sure the block with all register
     // variables jumps to the block that will contain the first instruction
@@ -837,7 +871,8 @@ bool TraceLifter::Lift(uint64_t addr_,
     llvm::BranchInst::Create(state.GetOrCreateBlock(trace_addr),
                              &(state.func->front()));
 
-    CHECK(state.inst_work_list.empty());
+    // CHECK(state.inst_work_list.empty());
+    assert(state.inst_work_list.empty());
     state.inst_work_list.insert(trace_addr);
 
     llvm::Function *target_trace = nullptr;
@@ -873,9 +908,9 @@ bool TraceLifter::Lift(uint64_t addr_,
         }
         uint8_t byte = 0;
         if (!manager.TryReadExecutableByte(byte_addr, &byte)) {
-          DLOG(WARNING)
-              << "Couldn't read executable byte at "
-              << std::hex << byte_addr << std::dec;
+          // DLOG(WARNING)
+          //     << "Couldn't read executable byte at "
+          //     << std::hex << byte_addr << std::dec;
           break;
         }
         state.inst_bytes.push_back(static_cast<char>(byte));

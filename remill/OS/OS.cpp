@@ -14,13 +14,14 @@
  * limitations under the License.
  */
 
-#include <glog/logging.h>
-#include <gflags/gflags.h>
+// #include <glog/logging.h>
+// #include <gflags/gflags.h>
 
 #include "remill/OS/OS.h"
 
-DEFINE_string(os, REMILL_OS, "Operating system name of the code being "
-                             "translated. Valid OSes: linux, macos, windows.");
+// DEFINE_string(os, REMILL_OS, "Operating system name of the code being "
+//                              "translated. Valid OSes: linux, macos, windows.");
+std::string FLAGS_os = REMILL_OS;
 
 namespace remill {
 

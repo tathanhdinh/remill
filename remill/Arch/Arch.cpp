@@ -14,8 +14,8 @@
  * limitations under the License.
  */
 
-#include <gflags/gflags.h>
-#include <glog/logging.h>
+// #include <gflags/gflags.h>
+// #include <glog/logging.h>
 
 #include <algorithm>
 #include <memory>
@@ -45,13 +45,15 @@
 
 #include "remill/OS/OS.h"
 
-DEFINE_string(arch, REMILL_ARCH,
-              "Architecture of the code being translated. "
-              "Valid architectures: x86, amd64 (with or without "
-              "`_avx` or `_avx512` appended), aarch64, "
-              "mips32, mips64");
+// DEFINE_string(arch, REMILL_ARCH,
+//               "Architecture of the code being translated. "
+//               "Valid architectures: x86, amd64 (with or without "
+//               "`_avx` or `_avx512` appended), aarch64, "
+//               "mips32, mips64");
+std::string FLAGS_arch = REMILL_ARCH;
 
-DECLARE_string(os);
+// DECLARE_string(os);
+extern std::string FLAGS_os;
 
 namespace remill {
 namespace {
@@ -59,7 +61,8 @@ namespace {
 static unsigned AddressSize(ArchName arch_name) {
   switch (arch_name) {
     case kArchInvalid:
-      LOG(FATAL) << "Cannot get address size for invalid arch.";
+      // LOG(FATAL) << "Cannot get address size for invalid arch.";
+      assert(false);
       return 0;
     case kArchX86:
     case kArchX86_AVX:
@@ -101,7 +104,8 @@ llvm::Triple Arch::BasicTriple(void) const {
   llvm::Triple triple;
   switch (os_name) {
     case kOSInvalid:
-      LOG(FATAL) << "Cannot get triple OS.";
+      // LOG(FATAL) << "Cannot get triple OS.";
+      assert(false and "Cannot get triple OS.");
       break;
 
     case kOSLinux:
@@ -132,54 +136,55 @@ llvm::Triple Arch::BasicTriple(void) const {
 const Arch *Arch::Get(OSName os_name_, ArchName arch_name_) {
   switch (arch_name_) {
     case kArchInvalid:
-      LOG(FATAL) << "Unrecognized architecture.";
+      // LOG(FATAL) << "Unrecognized architecture.";
+      assert(false and "Unrecognized architecture.");
       return nullptr;
 
-    case kArchAArch64LittleEndian: {
-      static ArchCache gArchAArch64LE;
-      auto &arch = gArchAArch64LE[os_name_];
-      if (!arch) {
-        DLOG(INFO) << "Using architecture: AArch64, feature set: Little Endian";
-        arch = ArchPtr(GetAArch64(os_name_, arch_name_));
-      }
-      return arch.get();
-    }
+    // case kArchAArch64LittleEndian: {
+    //   static ArchCache gArchAArch64LE;
+    //   auto &arch = gArchAArch64LE[os_name_];
+    //   if (!arch) {
+    //     // DLOG(INFO) << "Using architecture: AArch64, feature set: Little Endian";
+    //     arch = ArchPtr(GetAArch64(os_name_, arch_name_));
+    //   }
+    //   return arch.get();
+    // }
 
     case kArchX86: {
       static ArchCache gArchX86;
       auto &arch = gArchX86[os_name_];
       if (!arch) {
-        DLOG(INFO) << "Using architecture: X86";
+        // DLOG(INFO) << "Using architecture: X86";
         arch = ArchPtr(GetX86(os_name_, arch_name_));
       }
       return arch.get();
     }
 
-    case kArchMips32: {
-      static ArchCache gArchMips;
-      auto &arch = gArchMips[os_name_];
-      if (!arch) {
-        DLOG(INFO) << "Using architecture: 32-bit MIPS";
-        arch = ArchPtr(GetMips(os_name_, arch_name_));
-      }
-      return arch.get();
-    }
+    // case kArchMips32: {
+    //   static ArchCache gArchMips;
+    //   auto &arch = gArchMips[os_name_];
+    //   if (!arch) {
+    //     // DLOG(INFO) << "Using architecture: 32-bit MIPS";
+    //     arch = ArchPtr(GetMips(os_name_, arch_name_));
+    //   }
+    //   return arch.get();
+    // }
 
-    case kArchMips64: {
-      static ArchCache gArchMips64;
-      auto &arch = gArchMips64[os_name_];
-      if (!arch) {
-        DLOG(INFO) << "Using architecture: 64-bit MIPS";
-        arch = ArchPtr(GetMips(os_name_, arch_name_));
-      }
-      return arch.get();
-    }
+    // case kArchMips64: {
+    //   static ArchCache gArchMips64;
+    //   auto &arch = gArchMips64[os_name_];
+    //   if (!arch) {
+    //     // DLOG(INFO) << "Using architecture: 64-bit MIPS";
+    //     arch = ArchPtr(GetMips(os_name_, arch_name_));
+    //   }
+    //   return arch.get();
+    // }
 
     case kArchX86_AVX: {
       static ArchCache gArchX86_AVX;
       auto &arch = gArchX86_AVX[os_name_];
       if (!arch) {
-        DLOG(INFO) << "Using architecture: X86, feature set: AVX";
+        // DLOG(INFO) << "Using architecture: X86, feature set: AVX";
         arch = ArchPtr(GetX86(os_name_, arch_name_));
       }
       return arch.get();
@@ -189,7 +194,7 @@ const Arch *Arch::Get(OSName os_name_, ArchName arch_name_) {
       static ArchCache gArchX86_AVX512;
       auto &arch = gArchX86_AVX512[os_name_];
       if (!arch) {
-        DLOG(INFO) << "Using architecture: X86, feature set: AVX512";
+        // DLOG(INFO) << "Using architecture: X86, feature set: AVX512";
         arch = ArchPtr(GetX86(os_name_, arch_name_));
       }
       return arch.get();
@@ -199,7 +204,7 @@ const Arch *Arch::Get(OSName os_name_, ArchName arch_name_) {
       static ArchCache gArchAMD64;
       auto &arch = gArchAMD64[os_name_];
       if (!arch) {
-        DLOG(INFO) << "Using architecture: AMD64";
+        // DLOG(INFO) << "Using architecture: AMD64";
         arch = ArchPtr(GetX86(os_name_, arch_name_));
       }
       return arch.get();
@@ -209,7 +214,7 @@ const Arch *Arch::Get(OSName os_name_, ArchName arch_name_) {
       static ArchCache gArchAMD64_AVX;
       auto &arch = gArchAMD64_AVX[os_name_];
       if (!arch) {
-        DLOG(INFO) << "Using architecture: AMD64, feature set: AVX";
+        // DLOG(INFO) << "Using architecture: AMD64, feature set: AVX";
         arch = ArchPtr(GetX86(os_name_, arch_name_));
       }
       return arch.get();
@@ -219,7 +224,7 @@ const Arch *Arch::Get(OSName os_name_, ArchName arch_name_) {
       static ArchCache gArchAMD64_AVX512;
       auto &arch = gArchAMD64_AVX512[os_name_];
       if (!arch) {
-        DLOG(INFO) << "Using architecture: AMD64, feature set: AVX512";
+        // DLOG(INFO) << "Using architecture: AMD64, feature set: AVX512";
         arch = ArchPtr(GetX86(os_name_, arch_name_));
       }
       return arch.get();
@@ -327,9 +332,9 @@ static bool GetRegisterOffset(llvm::Module *module, llvm::Type *state_ptr_type,
     if (auto gep = llvm::dyn_cast<llvm::GetElementPtrInst>(reg)) {
       llvm::APInt gep_offset(dl.getPointerSizeInBits(0), 0);
       if (!gep->accumulateConstantOffset(dl, gep_offset)) {
-        DLOG(INFO)
-            << "Named variable " << val_name << " is not a register in the "
-            << "state structure";
+        // DLOG(INFO)
+        //     << "Named variable " << val_name << " is not a register in the "
+        //     << "state structure";
       }
       *offset += gep_offset.getZExtValue();
       reg = gep->getPointerOperand();
@@ -342,16 +347,16 @@ static bool GetRegisterOffset(llvm::Module *module, llvm::Type *state_ptr_type,
       break;
 
     } else {
-      DLOG(INFO)
-          << "Named variable " << val_name << " is not a register in the "
-          << "state structure";
+      // DLOG(INFO)
+      //     << "Named variable " << val_name << " is not a register in the "
+      //     << "state structure";
       return false;
     }
   } while (reg);
 
-  DLOG(INFO)
-      << "Offset of register " << val_name << " in state structure is "
-      << *offset;
+  // DLOG(INFO)
+  //     << "Offset of register " << val_name << " in state structure is "
+  //     << *offset;
 
   return true;
 }
@@ -403,9 +408,10 @@ static void FixupBasicBlockVariables(llvm::Function *basic_block) {
       } else if (llvm::isa<llvm::BranchInst>(&inst) ||
                  llvm::isa<llvm::CallInst>(&inst) ||
                  llvm::isa<llvm::InvokeInst>(&inst)) {
-        LOG(FATAL)
-            << "Unsupported instruction in __remill_basic_block: "
-            << LLVMThingToString(&inst);
+        // LOG(FATAL)
+        //     << "Unsupported instruction in __remill_basic_block: "
+        //     << LLVMThingToString(&inst);
+        assert(false);
       }
     }
   }
@@ -449,8 +455,8 @@ static void FixupBasicBlockVariables(llvm::Function *basic_block) {
     inst->eraseFromParent();
   }
 
-  CHECK(BlockHasSpecialVars(basic_block))
-      << "Unable to locate required variables in `__remill_basic_block`.";
+  // CHECK(BlockHasSpecialVars(basic_block))
+  //     << "Unable to locate required variables in `__remill_basic_block`.";
 }
 
 // Add attributes to llvm::Argument in a way portable across LLVMs
@@ -461,7 +467,7 @@ static void AddNoAliasToArgument(llvm::Argument *arg) {
         arg->getContext(),
         arg->getArgNo() + 1,
         llvm::Attribute::NoAlias)
-    ); 
+    );
   );
 
   IF_LLVM_GTE_39(
@@ -634,14 +640,16 @@ void Arch::CollectRegisters(llvm::Module *module) const {
       if (!reg.parent) {
         reg.parent = reg_at_offset;
       } else if (!reg_at_offset) {
-        LOG(FATAL)
-            << "Register " << reg.name << " is not fully enclosed by parent "
-            << reg.parent->name;
+        assert(false);
+        // LOG(FATAL)
+        //     << "Register " << reg.name << " is not fully enclosed by parent "
+        //     << reg.parent->name;
       } else if (reg.parent != reg_at_offset) {
-        LOG(FATAL)
-            << "Can't set parent of register " << reg.name
-            << " to " << reg_at_offset->name << " because it already has "
-            << reg.parent->name << " as its parent";
+        assert(false);
+        // LOG(FATAL)
+        //     << "Can't set parent of register " << reg.name
+        //     << " to " << reg_at_offset->name << " because it already has "
+        //     << reg.parent->name << " as its parent";
       }
       reg_at_offset = &reg;
     }

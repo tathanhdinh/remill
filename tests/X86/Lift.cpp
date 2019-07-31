@@ -22,8 +22,8 @@
 #include <sstream>
 #include <string>
 
-#include <gflags/gflags.h>
-#include <glog/logging.h>
+// #include <gflags/gflags.h>
+// #include <glog/logging.h>
 
 #include <llvm/IR/Function.h>
 #include <llvm/IR/GlobalValue.h>
@@ -48,11 +48,14 @@
 # define SYMBOL_PREFIX ""
 #endif
 
-DEFINE_string(bc_out, "",
-              "Name of the file in which to place the generated bitcode.");
+// DEFINE_string(bc_out, "",
+//               "Name of the file in which to place the generated bitcode.");
+std::string FLAGS_bc_out = "";
 
-DECLARE_string(arch);
-DECLARE_string(os);
+extern std::string FLAGS_arch;
+extern std::string FLAGS_os;
+// DECLARE_string(arch);
+// DECLARE_string(os);
 
 namespace {
 

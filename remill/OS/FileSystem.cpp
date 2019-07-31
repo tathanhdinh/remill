@@ -14,14 +14,17 @@
  * limitations under the License.
  */
 
-#include <glog/logging.h>
+// #include <glog/logging.h>
 
 #include <algorithm>
 #include <cerrno>
 #include <climits>
 #include <cstdlib>
+#include <cassert>
+#include <cstring>
 #include <vector>
 #include <fstream>
+#include <sstream>
 
 #ifndef WIN32
 # include <dirent.h>
@@ -158,7 +161,8 @@ void ForEachFileInDirectory(const std::string &dir_name,
         break;
       }
 
-      LOG(ERROR) << "Could not list the " << dir_name << " directory";
+      assert(false);
+      // LOG(ERROR) << "Could not list the " << dir_name << " directory";
       break;
     }
   } while (true);
@@ -190,22 +194,25 @@ bool FileExists(const std::string &path) {
 
 uint64_t FileSize(int fd) {
   struct stat64 file_info;
-  CHECK(!fstat64(fd, &file_info))
-      << "Cannot stat FD " << fd << ": " << strerror(errno);
+  assert(!fstat64(fd, &file_info));
+  // CHECK(!fstat64(fd, &file_info))
+  //     << "Cannot stat FD " << fd << ": " << strerror(errno);
   return static_cast<uint64_t>(file_info.st_size);
 }
 
 uint64_t FileSize(const std::string &path, int fd) {
   struct stat64 file_info;
-  CHECK(!fstat64(fd, &file_info))
-      << "Cannot stat " << path << ": " << strerror(errno);
+  assert(!fstat64(fd, &file_info));
+  // CHECK(!fstat64(fd, &file_info))
+  //     << "Cannot stat " << path << ": " << strerror(errno);
   return static_cast<uint64_t>(file_info.st_size);
 }
 
 uint64_t FileSize(const std::string &path) {
   struct stat64 file_info;
-  CHECK(!stat64(path.c_str(), &file_info))
-      << "Cannot stat " << path << ": " << strerror(errno);
+  assert(!stat64(path.c_str(), &file_info));
+  // CHECK(!stat64(path.c_str(), &file_info))
+  //     << "Cannot stat " << path << ": " << strerror(errno);
   return static_cast<uint64_t>(file_info.st_size);
 }
 
@@ -214,8 +221,9 @@ void ForEachFileInDirectory(const std::string &dir_name,
                             DirectoryVisitor visitor) {
   std::vector<std::string> paths;
   auto dir = opendir(dir_name.c_str());
-  CHECK(dir != nullptr)
-      << "Could not list the " << dir_name << " directory";
+  assert(dir != nullptr);
+  // CHECK(dir != nullptr)
+  //     << "Could not list the " << dir_name << " directory";
 
   while (auto ent = readdir(dir)) {
     if (!strcmp(ent->d_name, ".") || !strcmp(ent->d_name, "..")) {
@@ -246,8 +254,9 @@ bool TryCreateDirectory(const std::string &dir_name) {
 std::string CurrentWorkingDirectory(void) {
   char result[PATH_MAX] = {};
   auto res = getcwd(result, PATH_MAX);
-  CHECK(res)
-      << "Could not determine current working directory: " << strerror(errno);
+  assert(res);
+  // CHECK(res)
+  //     << "Could not determine current working directory: " << strerror(errno);
   return std::string(result);
 }
 
@@ -259,9 +268,10 @@ bool RenameFile(const std::string &from_path, const std::string &to_path) {
   auto ret = rename(from_path.c_str(), to_path.c_str());
   auto err = errno;
   if (-1 == ret) {
-    LOG(ERROR)
-        << "Unable to rename " << from_path << " to " << to_path
-        << ": " << strerror(err);
+    assert(false);
+    // LOG(ERROR)
+    //     << "Unable to rename " << from_path << " to " << to_path
+    //     << ": " << strerror(err);
     return false;
   } else {
     return true;
@@ -281,9 +291,10 @@ static uint8_t gCopyData[kCopyDataSize];
 #ifdef WIN32
 void CopyFile(const std::string &from_path, const std::string &to_path) {
   if (CopyFileA(from_path.data(), to_path.data(), false) == 0) {
-    LOG(FATAL)
-      << "Unable to copy all data read from " << from_path
-      << " to " << to_path;
+    assert(false);
+    // LOG(FATAL)
+    //   << "Unable to copy all data read from " << from_path
+    //   << " to " << to_path;
   }
 }
 
@@ -291,14 +302,16 @@ void CopyFile(const std::string &from_path, const std::string &to_path) {
 void CopyFile(const std::string &from_path, const std::string &to_path) {
   unlink(to_path.c_str());
   auto from_fd = open(from_path.c_str(), O_RDONLY);
-  CHECK(-1 != from_fd)
-      << "Unable to open source file " << from_path
-      << " for copying: " << strerror(errno);
+  assert(-1 != from_fd);
+  // CHECK(-1 != from_fd)
+  //     << "Unable to open source file " << from_path
+  //     << " for copying: " << strerror(errno);
 
   auto to_fd = open(to_path.c_str(), O_WRONLY | O_TRUNC | O_CREAT, 0666);
-  CHECK(-1 != to_fd)
-      << "Unable to open destination file " << to_path
-      << " for copying: " << strerror(errno);
+  assert(-1 != to_fd);
+  // CHECK(-1 != to_fd)
+  //     << "Unable to open destination file " << to_path
+  //     << " for copying: " << strerror(errno);
 
   auto file_size = FileSize(from_path);
   int errno_copy = 0;
@@ -327,9 +340,10 @@ void CopyFile(const std::string &from_path, const std::string &to_path) {
 
   if (errno_copy) {
     unlink(to_path.c_str());
-    LOG(FATAL)
-        << "Unable to copy all data read from " << from_path
-        << " to " << to_path << ": " << strerror(errno_copy);
+    assert(false);
+    // LOG(FATAL)
+    //     << "Unable to copy all data read from " << from_path
+    //     << " to " << to_path << ": " << strerror(errno_copy);
   }
 }
 #endif
@@ -341,9 +355,9 @@ void HardLinkOrCopyFile(const std::string &from_path,
     return;
   }
 
-  DLOG(WARNING)
-      << "Unable to link " << to_path << " to "
-      << from_path << ": " << strerror(errno);
+  // DLOG(WARNING)
+  //     << "Unable to link " << to_path << " to "
+  //     << from_path << ": " << strerror(errno);
 
   CopyFile(from_path, to_path);
 }
@@ -365,9 +379,9 @@ std::string CanonicalPath(const std::string &path) {
   auto err = errno;
 #endif
   if (!canon_path_c) {
-    DLOG(WARNING)
-        << "Cannot compute full path of " << path
-        << ": " << strerror(err);
+    // DLOG(WARNING)
+    //     << "Cannot compute full path of " << path
+    //     << ": " << strerror(err);
     return path;
   } else {
     std::string canon_path(canon_path_c);

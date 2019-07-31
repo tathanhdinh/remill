@@ -25,8 +25,8 @@
 #include <string>
 #include <system_error>
 
-#include <gflags/gflags.h>
-#include <glog/logging.h>
+// #include <gflags/gflags.h>
+// #include <glog/logging.h>
 
 #include <llvm/IR/Function.h>
 #include <llvm/IR/GlobalValue.h>
@@ -47,18 +47,23 @@
 #include <remill/BC/Util.h>
 #include <remill/OS/OS.h>
 
-DEFINE_uint64(address, 0, "Address at which we should assume the bytes are"
-                          "located in virtual memory.");
+// DEFINE_uint64(address, 0, "Address at which we should assume the bytes are"
+//                           "located in virtual memory.");
+uint64_t FLAGS_address = 0;
 
-DEFINE_uint64(entry_address, 0, "Address of instruction that should be "
-                                "considered the entrypoint of this code. "
-                                "Defaults to the value of --address.");
+// DEFINE_uint64(entry_address, 0, "Address of instruction that should be "
+//                                 "considered the entrypoint of this code. "
+//                                 "Defaults to the value of --address.");
+uint64_t FLAGS_entry_address = 0;
 
-DEFINE_string(bytes, "", "Hex-encoded byte string to lift.");
+// DEFINE_string(bytes, "", "Hex-encoded byte string to lift.");
+std::string FLAGS_bytes = "";
 
-DEFINE_string(ir_out, "", "Path to file where the LLVM IR should be saved.");
-DEFINE_string(bc_out, "", "Path to file where the LLVM bitcode should be "
-                          "saved.");
+// DEFINE_string(ir_out, "", "Path to file where the LLVM IR should be saved.");
+// DEFINE_string(bc_out, "", "Path to file where the LLVM bitcode should be "
+//                           "saved.");
+std::string FLAGS_ir_out = "";
+std::string FLAGS_bc_out = "";
 
 using Memory = std::map<uint64_t, uint8_t>;
 
@@ -161,8 +166,8 @@ class SimpleTraceManager : public remill::TraceManager {
 };
 
 int main(int argc, char *argv[]) {
-  google::ParseCommandLineFlags(&argc, &argv, true);
-  google::InitGoogleLogging(argv[0]);
+  // google::ParseCommandLineFlags(&argc, &argv, true);
+  // google::InitGoogleLogging(argv[0]);
 
   if (FLAGS_bytes.empty()) {
     std::cerr
@@ -237,15 +242,15 @@ int main(int argc, char *argv[]) {
 
   if (!FLAGS_ir_out.empty()) {
     if (!remill::StoreModuleIRToFile(&dest_module, FLAGS_ir_out, true)) {
-      LOG(ERROR)
-          << "Could not save LLVM IR to " << FLAGS_ir_out;
+      // LOG(ERROR)
+      //     << "Could not save LLVM IR to " << FLAGS_ir_out;
       ret = EXIT_FAILURE;
     }
   }
   if (!FLAGS_bc_out.empty()) {
     if (!remill::StoreModuleToFile(&dest_module, FLAGS_bc_out, true)) {
-      LOG(ERROR)
-          << "Could not save LLVM bitcode to " << FLAGS_bc_out;
+      // LOG(ERROR)
+      //     << "Could not save LLVM bitcode to " << FLAGS_bc_out;
       ret = EXIT_FAILURE;
     }
   }

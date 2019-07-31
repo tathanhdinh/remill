@@ -14,10 +14,12 @@
  * limitations under the License.
  */
 
-#include <glog/logging.h>
-#include <gflags/gflags.h>
+// #include <glog/logging.h>
+// #include <gflags/gflags.h>
 
 #include <cstdio>
+#include <string>
+#include <sstream>
 #include <fstream>
 #include <iostream>
 #include <unordered_map>
@@ -37,19 +39,22 @@
 #include "remill/BC/Util.h"
 #include "remill/OS/FileSystem.h"
 
-DEFINE_string(dot_output_dir, "",
-              "The directory in which to log DOT digraphs of the alias "
-              "analysis information derived during the process of "
-              "eliminating dead stores.");
+// DEFINE_string(dot_output_dir, "",
+//               "The directory in which to log DOT digraphs of the alias "
+//               "analysis information derived during the process of "
+//               "eliminating dead stores.");
+std::string FLAGS_dot_output_dir = "";
 
-DEFINE_bool(disable_dead_store_elimination, false,
-            "Whether or not to perform dead store elimination on stores into"
-            "the State structure.");
+// DEFINE_bool(disable_dead_store_elimination, false,
+//             "Whether or not to perform dead store elimination on stores into"
+//             "the State structure.");
+bool FLAGS_disable_dead_store_elimination = false;
 
-DEFINE_bool(enable_register_forwarding, false,
-            "Whether or not register forwarding should be enabled "
-            "to perform load-to-load and load-to-store forwarding "
-            "to eliminate dead instructions more aggressively.");
+// DEFINE_bool(enable_register_forwarding, false,
+//             "Whether or not register forwarding should be enabled "
+//             "to perform load-to-load and load-to-store forwarding "
+//             "to eliminate dead instructions more aggressively.");
+bool FLAGS_enable_register_forwarding = false;
 
 namespace remill {
 namespace {
@@ -119,8 +124,9 @@ StateVisitor::StateVisitor(llvm::DataLayout *dl_, uint64_t num_bytes)
 // offset that is within the element's begin offset and end offset.
 void StateVisitor::Visit(llvm::Type *ty) {
   if (!ty) {  // TODO(tim): Is this even possible?
-    LOG(FATAL)
-        << "NULL type in `State` structure.";
+    assert(false and "NULL type in `State` structure.");
+    // LOG(FATAL)
+    //     << "NULL type in `State` structure.";
 
   // Structure, class, or union.
   } else if (auto struct_ty = llvm::dyn_cast<llvm::StructType>(ty)) {
@@ -131,8 +137,9 @@ void StateVisitor::Visit(llvm::Type *ty) {
     }
 
   } else if (llvm::isa<llvm::PointerType>(ty)) {
-    LOG(FATAL)
-        << "There should not be pointer types inside of the State structure.";
+    assert(false and "There should not be pointer types inside of the State structure.");
+    // LOG(FATAL)
+    //     << "There should not be pointer types inside of the State structure.";
 
   // Array or vector.
   } else if (auto seq_ty = llvm::dyn_cast<llvm::SequentialType>(ty)) {
@@ -168,9 +175,10 @@ void StateVisitor::Visit(llvm::Type *ty) {
     offset += len;
 
   } else {
-    LOG(FATAL)
-        << "Unexpected type `" << LLVMThingToString(ty)
-        << "` in state structure";
+    assert(false);
+    // LOG(FATAL)
+    //     << "Unexpected type `" << LLVMThingToString(ty)
+    //     << "` in state structure";
   }
 }
 
@@ -199,9 +207,9 @@ static bool TryGetOffsetOrConst(
       *offset_out = static_cast<uint64_t>(const_val->getSExtValue());
       return true;
     } else {
-      LOG(WARNING)
-          << "Unable to fit offset from " << remill::LLVMThingToString(val)
-          << " into a 64-bit signed integer";
+      // LOG(WARNING)
+      //     << "Unable to fit offset from " << remill::LLVMThingToString(val)
+      //     << " into a 64-bit signed integer";
       return false;
     }
   } else {
@@ -420,9 +428,9 @@ void ForwardAliasVisitor::CreateDOTDigraph(llvm::Function *func,
         } else if (llvm::isa<llvm::StoreInst>(&inst)) {
           inst_size = dl.getTypeAllocSize(inst.getOperand(0)->getType());
         } else {
-          LOG(FATAL)
-              << "Instruction " << LLVMThingToString(&inst)
-              << " has scope meta-data";
+          // LOG(FATAL)
+          //     << "Instruction " << LLVMThingToString(&inst)
+          //     << " has scope meta-data";
         }
         dot << "<td>" << offset << "</td><td>";
         StreamSlot(dot, slot, inst_size);
@@ -540,9 +548,9 @@ bool ForwardAliasVisitor::Analyze(llvm::Function *func) {
   auto memory_ptr = LoadMemoryPointerArg(func);
   auto pc = LoadProgramCounterArg(func);
   if (!state_ptr || !memory_ptr || !pc) {
-    LOG(ERROR)
-        << "Not analyzing " << func->getName().str()
-        << " for dead loads or stores";
+    // LOG(ERROR)
+    //     << "Not analyzing " << func->getName().str()
+    //     << " for dead loads or stores";
     return false;
   }
 
@@ -598,7 +606,8 @@ bool ForwardAliasVisitor::Analyze(llvm::Function *func) {
   order_of_progress.insert(order_of_progress.end(),
                            curr_wl.begin(), curr_wl.end());
 
-  CHECK(num_insts == order_of_progress.size());
+  // CHECK(num_insts == order_of_progress.size());
+  assert(num_insts == order_of_progress.size());
 
   pending_wl.clear();
   next_wl.clear();
@@ -629,12 +638,12 @@ bool ForwardAliasVisitor::Analyze(llvm::Function *func) {
 
   // TODO(tim): This condition is triggered a lot.
   if (!pending_wl.empty()) {
-    DLOG(ERROR)
-        << "Alias analysis failed to complete on function `"
-        << func->getName().str() << "` with " << next_wl.size()
-        << " instructions in the worklist and " << pending_wl.size()
-        << " incomplete but no progress made in the last"
-        << " iteration";
+    // DLOG(ERROR)
+    //     << "Alias analysis failed to complete on function `"
+    //     << func->getName().str() << "` with " << next_wl.size()
+    //     << " instructions in the worklist and " << pending_wl.size()
+    //     << " incomplete but no progress made in the last"
+    //     << " iteration";
   }
 
   if (!FLAGS_dot_output_dir.empty()) {
@@ -739,10 +748,10 @@ VisitResult ForwardAliasVisitor::visitGetElementPtrInst(
   if (!TryCombineOffsets(ptr->second, OpType::Plus,
                          static_cast<uint64_t>(const_offset.getSExtValue()),
                          offset_to_slot.size(), &offset)) {
-    LOG(WARNING)
-        << "Out of bounds GEP operation: " << LLVMThingToString(&inst)
-        << " with inferred offset " << static_cast<int64_t>(offset)
-        << " and max allowed offset of " << offset_to_slot.size();
+    // LOG(WARNING)
+    //     << "Out of bounds GEP operation: " << LLVMThingToString(&inst)
+    //     << " with inferred offset " << static_cast<int64_t>(offset)
+    //     << " and max allowed offset of " << offset_to_slot.size();
     return VisitResult::Error;
   }
 
@@ -848,21 +857,21 @@ VisitResult ForwardAliasVisitor::visitBinaryOp_(
   }
 
   if (2 == num_offsets) {
-    LOG(WARNING)
-        << "Adding or subtracting two state-pointer derived pointers";
+    // LOG(WARNING)
+    //     << "Adding or subtracting two state-pointer derived pointers";
     return VisitResult::Error;
 
   } else if (2 == (num_offsets + num_consts)) {
     uint64_t offset = 0;
     if (!TryCombineOffsets(lhs_offset, op, rhs_offset, offset_to_slot.size(),
                            &offset)) {
-      LOG(WARNING)
-          << "Out of bounds operation `"
-          << LLVMThingToString(&inst) << "` with LHS offset "
-          << static_cast<int64_t>(lhs_offset)
-          << ", RHS offset " << static_cast<int64_t>(rhs_offset)
-          << ", combined offset " << static_cast<int64_t>(offset)
-          << ", and max allowed offset of " << offset_to_slot.size();
+      // LOG(WARNING)
+      //     << "Out of bounds operation `"
+      //     << LLVMThingToString(&inst) << "` with LHS offset "
+      //     << static_cast<int64_t>(lhs_offset)
+      //     << ", RHS offset " << static_cast<int64_t>(rhs_offset)
+      //     << ", combined offset " << static_cast<int64_t>(offset)
+      //     << ", and max allowed offset of " << offset_to_slot.size();
       return VisitResult::Error;
     }
 
@@ -1413,9 +1422,10 @@ void LiveSetBlockVisitor::CreateDOTDigraph(llvm::Function *func,
         } else if (llvm::isa<llvm::StoreInst>(&inst)) {
           inst_size = dl->getTypeAllocSize(inst.getOperand(0)->getType());
         } else {
-          LOG(FATAL)
-              << "Instruction " << LLVMThingToString(&inst)
-              << " has scope meta-data";
+          assert(false);
+          // LOG(FATAL)
+          //     << "Instruction " << LLVMThingToString(&inst)
+          //     << " has scope meta-data";
         }
 
         StreamSlot(dot, slot, inst_size);
@@ -1523,10 +1533,10 @@ static llvm::Value *ConvertToSameSizedType(
 
   } else if (val_type->isFloatingPointTy()) {
     if (dest_type->isPointerTy()) {
-      LOG(ERROR)
-          << "Likely nonsensical forwarding of float type "
-          << LLVMThingToString(val_type) << " to pointer type "
-          << LLVMThingToString(dest_type);
+      // LOG(ERROR)
+      //     << "Likely nonsensical forwarding of float type "
+      //     << LLVMThingToString(val_type) << " to pointer type "
+      //     << LLVMThingToString(dest_type);
 
       return nullptr;
     } else {
@@ -1541,10 +1551,10 @@ static llvm::Value *ConvertToSameSizedType(
       return new llvm::BitCastInst(val, dest_type, "", insert_loc);
 
     } else {
-      LOG(ERROR)
-          << "Likely nonsensical forwarding of pointer type "
-          << LLVMThingToString(val_type) << " to type "
-          << LLVMThingToString(dest_type);
+      // LOG(ERROR)
+      //     << "Likely nonsensical forwarding of pointer type "
+      //     << LLVMThingToString(val_type) << " to type "
+      //     << LLVMThingToString(dest_type);
       return nullptr;
     }
   } else {
@@ -1782,8 +1792,8 @@ std::vector<StateSlot> StateSlots(llvm::Module *module) {
   if (!FLAGS_dot_output_dir.empty()) {
     if (!TryCreateDirectory(FLAGS_dot_output_dir)) {
       FLAGS_dot_output_dir.clear();
-      LOG(ERROR)
-          << "Invalid path specified to `--dot_output_dir`.";
+      // LOG(ERROR)
+      //     << "Invalid path specified to `--dot_output_dir`.";
     } else {
       FLAGS_dot_output_dir = CanonicalPath(FLAGS_dot_output_dir);
     }
@@ -1791,13 +1801,15 @@ std::vector<StateSlot> StateSlots(llvm::Module *module) {
 
   auto state_ptr_type = StatePointerType(module);
   auto type = state_ptr_type->getElementType();
-  CHECK(type->isStructTy());
+  assert(type->isStructTy());
+  // CHECK(type->isStructTy());
 
   llvm::DataLayout dl(module);
   const auto num_bytes = dl.getTypeAllocSize(type);
   StateVisitor vis(&dl, num_bytes);
   vis.Visit(type);
-  CHECK(vis.offset_to_slot.size() == num_bytes);
+  assert(vis.offset_to_slot.size() == num_bytes);
+  // CHECK(vis.offset_to_slot.size() == num_bytes);
   return vis.offset_to_slot;
 }
 

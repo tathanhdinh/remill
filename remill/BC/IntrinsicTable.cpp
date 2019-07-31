@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-#include <glog/logging.h>
+// #include <glog/logging.h>
 
 #include <vector>
 
@@ -33,8 +33,10 @@ namespace {
 static llvm::Function *FindIntrinsic(llvm::Module *module,
                                      const char *name) {
   auto function = FindFunction(module, name);
-  CHECK(nullptr != function)
-      << "Unable to find intrinsic: " << name;
+  assert(nullptr != function);
+//   CHECK(nullptr != function)
+//       << "Unable to find intrinsic: " << name;
+
 
   // We don't want calls to memory intrinsics to be duplicated because then
   // they might have the wrong side effects!

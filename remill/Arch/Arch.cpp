@@ -67,13 +67,13 @@ static unsigned AddressSize(ArchName arch_name) {
     case kArchX86:
     case kArchX86_AVX:
     case kArchX86_AVX512:
-    case kArchMips32:
+    // case kArchMips32:
       return 32;
     case kArchAMD64:
     case kArchAMD64_AVX:
     case kArchAMD64_AVX512:
-    case kArchMips64:
-    case kArchAArch64LittleEndian:
+    // case kArchMips64:
+    // case kArchAArch64LittleEndian:
       return 64;
   }
   return 0;
@@ -295,9 +295,9 @@ bool Arch::IsAMD64(void) const {
   }
 }
 
-bool Arch::IsAArch64(void) const {
-  return remill::kArchAArch64LittleEndian == arch_name;
-}
+// bool Arch::IsAArch64(void) const {
+//   return remill::kArchAArch64LittleEndian == arch_name;
+// }
 
 bool Arch::IsWindows(void) const {
   return remill::kOSWindows == os_name;

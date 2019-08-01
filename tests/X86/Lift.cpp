@@ -99,10 +99,10 @@ class TestTraceManager : public remill::TraceManager {
 }  // namespace
 
 extern "C" int main(int argc, char *argv[]) {
-  google::ParseCommandLineFlags(&argc, &argv, true);
-  google::InitGoogleLogging(argv[0]);
+  // google::ParseCommandLineFlags(&argc, &argv, true);
+  // google::InitGoogleLogging(argv[0]);
 
-  DLOG(INFO) << "Generating tests.";
+  // DLOG(INFO) << "Generating tests.";
 
   std::vector<const test::TestInfo *> tests;
   for (auto i = 0U; ; ++i) {
@@ -134,8 +134,8 @@ extern "C" int main(int argc, char *argv[]) {
 
   for (auto test : tests) {
     if (!trace_lifter.Lift(test->test_begin)) {
-      LOG(ERROR)
-          << "Unable to lift test " << test->test_name;
+      // LOG(ERROR)
+      //     << "Unable to lift test " << test->test_name;
       continue;
     }
 
@@ -147,10 +147,10 @@ extern "C" int main(int argc, char *argv[]) {
     lifted_trace->setName(ss.str());
   }
 
-  DLOG(INFO) << "Serializing bitcode to " << FLAGS_bc_out;
+  // DLOG(INFO) << "Serializing bitcode to " << FLAGS_bc_out;
   remill::GetHostArch()->PrepareModule(module);
   remill::StoreModuleToFile(module, FLAGS_bc_out);
 
-  DLOG(INFO) << "Done.";
+  // DLOG(INFO) << "Done.";
   return 0;
 }

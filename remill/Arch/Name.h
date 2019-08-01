@@ -55,10 +55,10 @@ enum ArchName : uint32_t {
   kArchAMD64_AVX,
   kArchAMD64_AVX512,
 
-  kArchMips32,
-  kArchMips64,
+  // kArchMips32,
+  // kArchMips64,
 
-  kArchAArch64LittleEndian
+  // kArchAArch64LittleEndian
 };
 
 // Convert the string name of an architecture into a canonical form.

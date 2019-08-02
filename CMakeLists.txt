@@ -68,6 +68,9 @@ find_package(XED REQUIRED)
 list(APPEND PROJECT_LIBRARIES ${XED_LIBRARIES})
 list(APPEND PROJECT_INCLUDEDIRECTORIES ${XED_INCLUDE_DIRS})
 
+# zydis
+list(APPEND PROJECT_LIBRARIES Zydis)
+
 # google log module
 find_package(glog REQUIRED)
 list(APPEND PROJECT_LIBRARIES glog::glog)
@@ -106,7 +109,7 @@ add_library(${PROJECT_NAME} STATIC
   remill/Arch/AArch64/Decode.cpp
   remill/Arch/AArch64/Extract.cpp
   remill/Arch/X86/Arch.cpp
-  
+
   remill/Arch/Arch.cpp
   remill/Arch/Instruction.cpp
   remill/Arch/Name.cpp
@@ -209,12 +212,12 @@ if("${LIBRARY_REPOSITORY_ROOT}" STREQUAL "" OR NOT EXISTS "${LIBRARY_REPOSITORY_
   set(INSTALLED_LIBLLVM_NAME "${dynamic_lib_prefix}LLVM-${REMILL_LLVM_VERSION}.${dynamic_lib_extension}")
 
   # system binaries are not built statically, so we need to fix the rpath
-  find_program("clang_location" "clang-${REMILL_LLVM_VERSION}${executable_extension}")
-  if("${clang_location}" STREQUAL "clang_location-NOTFOUND")
-    message(FATAL_ERROR "InstallExternalTarget: Failed to locate the clang executable")
-  endif()
+  # find_program("clang_location" "clang-${REMILL_LLVM_VERSION}${executable_extension}")
+  # if("${clang_location}" STREQUAL "clang_location-NOTFOUND")
+  #   message(FATAL_ERROR "InstallExternalTarget: Failed to locate the clang executable")
+  # endif()
 
-  message("InstallExternalTarget: Found clang executable: ${clang_location}")
+  # message("InstallExternalTarget: Found clang executable: ${clang_location}")
 
   find_program("llvmlink_location" "llvm-link${executable_extension}")
   if("${llvmlink_location}" STREQUAL "llvmlink_location-NOTFOUND")
@@ -223,15 +226,15 @@ if("${LIBRARY_REPOSITORY_ROOT}" STREQUAL "" OR NOT EXISTS "${LIBRARY_REPOSITORY_
 
   message("InstallExternalTarget: Found llvm-link executable: ${llvmlink_location}")
 
-  find_library("libllvm_location" "${dynamic_lib_prefix}LLVM-${REMILL_LLVM_VERSION}.${dynamic_lib_extension}")
-  if("${libllvm_location}" STREQUAL "libllvm_location-NOTFOUND")
-    message(FATAL_ERROR "InstallExternalTarget: Failed to locate the libLLVM dynamic library")
-  endif()
-  
-  message("InstallExternalTarget: Found libLLVM location: ${libllvm_location}")
+  # find_library("libllvm_location" "${dynamic_lib_prefix}LLVM-${REMILL_LLVM_VERSION}.${dynamic_lib_extension}")
+  # if("${libllvm_location}" STREQUAL "libllvm_location-NOTFOUND")
+  #   message(FATAL_ERROR "InstallExternalTarget: Failed to locate the libLLVM dynamic library")
+  # endif()
 
-  InstallExternalTarget("ext_clang" "${clang_location}" "${install_folder}/bin"
-    "${INSTALLED_CLANG_NAME}" "${install_folder}/lib")
+  # message("InstallExternalTarget: Found libLLVM location: ${libllvm_location}")
+
+  # InstallExternalTarget("ext_clang" "${clang_location}" "${install_folder}/bin"
+  #   "${INSTALLED_CLANG_NAME}" "${install_folder}/lib")
 
   InstallExternalTarget("ext_llvmlink" "${llvmlink_location}" "${install_folder}/bin"
     "${INSTALLED_LLVMLINK_NAME}" "${install_folder}/lib")
@@ -262,7 +265,7 @@ install(FILES "${CMAKE_CURRENT_BINARY_DIR}/remillConfig.cmake"
   DESTINATION "${install_folder}/lib/cmake/remill"
 )
 
-install(FILES 
+install(FILES
   "${CMAKE_CURRENT_SOURCE_DIR}/remill/Arch/Arch.h"
   "${CMAKE_CURRENT_SOURCE_DIR}/remill/Arch/Instruction.h"
   "${CMAKE_CURRENT_SOURCE_DIR}/remill/Arch/Name.h"
@@ -270,7 +273,7 @@ install(FILES
   DESTINATION "${install_folder}/include/remill/Arch"
 )
 
-install(FILES 
+install(FILES
   "${CMAKE_CURRENT_SOURCE_DIR}/remill/BC/ABI.h"
   "${CMAKE_CURRENT_SOURCE_DIR}/remill/BC/IntrinsicTable.h"
   "${CMAKE_CURRENT_SOURCE_DIR}/remill/BC/Lifter.h"
@@ -281,7 +284,7 @@ install(FILES
   DESTINATION "${install_folder}/include/remill/BC"
 )
 
-install(FILES 
+install(FILES
   "${CMAKE_CURRENT_SOURCE_DIR}/remill/BC/Compat/CallingConvention.h"
   "${CMAKE_CURRENT_SOURCE_DIR}/remill/BC/Compat/GlobalValue.h"
   "${CMAKE_CURRENT_SOURCE_DIR}/remill/BC/Compat/TargetLibraryInfo.h"
@@ -290,7 +293,7 @@ install(FILES
   DESTINATION "${install_folder}/include/remill/BC/Compat"
 )
 
-install(FILES 
+install(FILES
   "${CMAKE_CURRENT_SOURCE_DIR}/remill/OS/OS.h"
   DESTINATION "${install_folder}/include/remill/OS"
 )

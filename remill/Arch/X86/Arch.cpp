@@ -31,6 +31,7 @@
 #include "remill/Arch/Instruction.h"
 #include "remill/Arch/Name.h"
 #include "remill/Arch/X86/XED.h"
+#include "remill/Arch/X86/Zydis.h"
 #include "remill/BC/Version.h"
 #include "remill/OS/OS.h"
 
@@ -171,6 +172,69 @@ static bool IsError(const xed_decoded_inst_t *xedd) {
 
 static bool IsInvalid(const xed_decoded_inst_t *xedd) {
   return XED_ICLASS_INVALID == xed_decoded_inst_get_iclass(xedd);
+}
+
+static bool IsInvalid(const ZydisDecodedInstruction *zydis_inst) {
+  return zydis_inst->mnemonic == ZYDIS_MNEMONIC_INVALID;
+}
+
+static bool IsError(const ZydisDecodedInstruction *zydis_inst) {
+  switch (zydis_inst->mnemonic)
+  {
+  case ZYDIS_MNEMONIC_HLT:
+  case ZYDIS_MNEMONIC_UD0:
+  case ZYDIS_MNEMONIC_UD1:
+  case ZYDIS_MNEMONIC_UD2:
+    return true;
+
+  default:
+    return false;
+  }
+}
+
+static bool IsDirectJump(ZydisDecodedInstruction *zydis_inst) {
+  switch (zydis_inst->meta.category)
+  {
+  case ZYDIS_CATEGORY_COND_BR:
+    return zydis_inst->operands[0].type != ZYDIS_OPERAND_TYPE_MEMORY;
+
+  case ZYDIS_CATEGORY_UNCOND_BR:
+    return true;
+
+  default:
+    return false;
+  }
+}
+
+static bool IsIndirectJump(ZydisDecodedInstruction *zydis_inst) {
+  switch (zydis_inst->meta.category)
+  {
+  case ZYDIS_CATEGORY_COND_BR:
+    return zydis_inst->operands[0].type == ZYDIS_OPERAND_TYPE_MEMORY;
+    break;
+
+  case ZYDIS_CATEGORY_UNCOND_BR:
+    return false;
+
+  default:
+    return false;
+  }
+}
+
+static Instruction::Category CreateCategory(const ZydisDecodedInstruction *zydis_inst) {
+  if (IsInvalid(zydis_inst)) {
+    return Instruction::kCategoryInvalid;
+
+  } else if (IsError(zydis_inst)) {
+    return Instruction::kCategoryError;
+
+  } else if (IsDirectJump(zydis_inst)) {
+    return Instruction::kCategoryDirectJump;
+
+  } else if (IsIndirectJump(zydis_inst)) {
+    return Instruction::kCategoryIndirectJump;
+
+  }
 }
 
 // Return the category of this instuction.
@@ -826,6 +890,9 @@ class X86Arch : public Arch {
       Instruction &inst, bool is_lazy) const;
 
   X86Arch(void) = delete;
+
+  ZydisDecoder zydis_decoder_32;
+  ZydisDecoder zydis_decoder_64;
 };
 
 
@@ -837,6 +904,13 @@ X86Arch::X86Arch(OSName os_name_, ArchName arch_name_)
     DLOG(INFO) << "Initializing XED tables";
     xed_tables_init();
     xed_is_initialized = true;
+  }
+
+  static bool zydis_is_initialized = false;
+  if (!zydis_is_initialized) {
+    ZydisDecoderInit(&zydis_decoder_64, ZYDIS_MACHINE_MODE_LONG_64, ZYDIS_ADDRESS_WIDTH_64);
+    ZydisDecoderInit(&zydis_decoder_32, ZYDIS_MACHINE_MODE_LONG_COMPAT_32, ZYDIS_ADDRESS_WIDTH_32);
+    zydis_is_initialized = true;
   }
 }
 
@@ -978,6 +1052,15 @@ bool X86Arch::DecodeInstruction(
   xed_decoded_inst_t xedd_;
   xed_decoded_inst_t *xedd = &xedd_;
   auto mode = 32 == address_size ? &kXEDState32 : &kXEDState64;
+
+  ZydisDecodedInstruction zydis_inst;
+  auto zydis_decoder = 32 == address_size ? &zydis_decoder_32 : &zydis_decoder_64;
+  if (not ZYAN_SUCCESS(ZydisDecoderDecodeBuffer(zydis_decoder, inst_bytes.data(), inst_bytes.size(), &zydis_inst))) {
+    LOG(ERROR) << "Zydis could not decode the following opcodes: " << inst.Serialize();
+    return false;
+  }
+
+  inst.bytes = inst_bytes.substr(0, zydis_inst.length);
 
   if (!DecodeXED(xedd, mode, inst_bytes, address)) {
     LOG(ERROR) << "DecodeXED() could not decode the following opcodes: " << inst.Serialize();
